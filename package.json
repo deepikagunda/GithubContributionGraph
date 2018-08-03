@@ -1,0 +1,24 @@
+{
+  "name": "githubContributionGraph",
+  "version": "1.0.0",
+  "description": "Demo of using D3.js to show orders on dates in 2017",
+  "main": "server.js",
+  "dependencies": {
+    "body-parser": "^1.18.2",
+    "dotenv": "^5.0.1",
+    "express": "^4.16.3",
+    "mongoose": "^5.0.17",
+    "pug": "^2.0.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "d3.js",
+    "github graph",
+    "contribution graph"
+  ],
+  "author": "deepika gunda",
+  "license": "ISC"
+}

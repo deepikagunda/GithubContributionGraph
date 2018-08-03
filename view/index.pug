@@ -1,0 +1,211 @@
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    title Github style representation of Orders from an ecommerce website
+    script(src='https://code.jquery.com/jquery-3.2.1.slim.min.js', integrity='sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN', crossorigin='anonymous')
+    script(src='https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js', integrity='sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q', crossorigin='anonymous')
+
+    link(rel='stylesheet', href='https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css', integrity='sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm', crossorigin='anonymous')  
+    script(src='https://code.jquery.com/jquery-1.12.4.js')
+    script(src='https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js')
+    script(src='https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js', integrity='sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl', crossorigin='anonymous')
+
+    script(src='https://d3js.org/d3.v5.min.js')
+    style.
+      body {
+      padding-top: 50px;
+      }
+      .graph
+      {
+        padding-top:100px;
+        padding-left:20px;
+        padding-right:20px;
+      }
+      
+      
+      .color0 { fill: #f7fcf5 }
+      .color1 { fill: #c7e9c0 }
+      .color2 { fill: #a1d99b }
+      .color3 { fill: #41ab5d }
+      .color4 { fill: #238b45 }
+      .color5 { fill: #006d2c }
+      .color6 { fill: #00441b }
+
+
+      
+    body.bg-info
+    .container
+      .jumbotron
+        h3 Github style representation
+        h4 Orders from an ecommerce website in year 2017.
+    .results
+      .js-heatmap
+      .js-months
+      .js-legend
+
+script.
+    var CELL_SIZE = 25;
+    var NUMBER_OF_COLORS =7;
+
+    /**
+    * Render the heatmap and any other svg elements
+    * @param  {Object} data
+    * @param  {Date} startYear
+    * @param  {Date} endYear
+    */
+    function createHeatMap(data,count, startYear, endYear) {
+        //console.log(JSON.stringify(data));
+    var width = 1500;
+    var height = 180;
+    var dx = 35;
+    var gridClass = 'js-date-grid day color0';
+    try {
+        //Get the total order values in an array and sort it .
+
+        var dataArray = new Array;
+            for(var o in data) {
+                dataArray.push(data[o]);
+            }
+            dataArray = dataArray.sort(function(a, b){return a-b});
+            console.log(dataArray);
+
+            //Now find quantiles in dataArray.
+          
+    var domainArray = [d3.quantile(dataArray, 0.25),d3.quantile(dataArray, 0.5),d3.quantile(dataArray, 0.65),d3.quantile(dataArray, 0.75),d3.quantile(dataArray, 0.85),d3.quantile(dataArray, 0.95),d3.quantile(dataArray, 1)];
+            
+    var formatColor = d3.scaleThreshold().domain(domainArray).range(d3.range(NUMBER_OF_COLORS).map((d) => `color${d}`));
+    }
+    catch(err)
+    {
+        console.log("Error while setting scale quantize"+err);
+    }
+    
+    var heatmapSvg = d3.select('.js-heatmap').selectAll('svg.heatmap')
+        .enter()
+        .append('svg')
+        .data(d3.range(startYear, endYear))
+        .enter()
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height)
+        .attr('class', 'color');
+
+    // Add a grid for each day between the date range.
+    var dates = Object.keys(data);
+    //console.log('dates'+dates);
+    var rect = heatmapSvg.append('g')
+    .attr('transform', `translate(${dx},0)`);
+
+    // Add year label.
+    rect.append('text')
+        .attr('transform', `translate(-9,${CELL_SIZE * 3.5})rotate(-90)`)
+        .style('text-anchor', 'middle')
+        .text((d) => d);
+
+    rect.selectAll('.day')
+        // The heatmap will contain all the days in that year.
+        .data((d) => d3.timeDays(new Date(d, 0, 1), new Date(d + 1, 0, 1)))
+        .enter()
+        .append('rect')
+        .attr('class', gridClass)
+        .attr('width', CELL_SIZE)
+        .attr('height', CELL_SIZE)
+        .attr('x', (d) => d3.timeFormat('%U')(d) * CELL_SIZE)
+        .attr('y', (d) => d.getDay() * CELL_SIZE)
+        .attr('data-toggle', 'tooltip')
+        .datum(d3.timeFormat('%Y-%m-%d'))
+        // Add the grid data as a title attribute to render as a tooltip.
+        .attr('title', (d) => {
+           
+            var obj_found =  data[d];
+            var date = d3.timeFormat('%d %b, %Y')(new Date(d));
+            if (!obj_found) return `No sales on ${date}`;
+            else{ return ` $${obj_found} sale on ${date}`};
+        })
+        .attr('date', (d) => d)
+        // Add bootstrap's tooltip event listener.
+        .call(() => $('[data-toggle="tooltip"]').tooltip({
+            container: 'body',
+            placement: 'top',
+            position: { my: 'top' }
+        }))
+        // Add the colors to the grids.
+        .filter((d) => dates.indexOf(d) > -1)
+        .attr('class', (d) => `${gridClass} ${formatColor(data[d])}`);
+
+    // Render x axis to show months
+    d3.select('.js-months').selectAll('svg.months')
+        .enter()
+        .append('svg')
+        .data([1])
+        .enter()
+        .append('svg')
+        .attr('width', 1500)
+        .attr('height',30)
+        .append('g')
+        .attr('transform', 'translate(0,10)')
+        .selectAll('.month')
+        .data(() => d3.range(12))
+        .enter()
+        .append('text')
+            .attr('x', (d) => d * (4.5 * CELL_SIZE) + dx)
+            .text((d) => d3.timeFormat('%b')(new Date(0, d + 1, 0)));
+
+    // Render the grid color legend.
+    var legendSvg = d3.select('.js-legend').selectAll('svg.legend')
+        .enter()
+        .append('svg')
+        .data([1])
+        .enter()
+        .append('svg')
+        .attr('width', 1500)
+        .attr('height', 20)
+        .append('g')
+        .attr('transform', 'translate(644,0)')
+        .selectAll('.legend-grid')
+        .data(() => d3.range(7))
+        .enter()
+        .append('rect')
+            .attr('width', CELL_SIZE)
+            .attr('height', CELL_SIZE)
+            .attr('x', (d) => d * CELL_SIZE + dx)
+            .attr('class', (d) => `day color${d}`);
+
+    }
+
+    function showEmptyMessage() {
+    $('.js-empty').toggleClass('hidden', false);
+
+    }
+    
+    //src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.4.0/d3.min.js";
+
+
+    $(document).ready(function() {
+
+        //$.getScript( "https://cdnjs.cloudflare.com/ajax/libs/d3/4.4.0/d3.min.js", function() {
+        //console.log("d3 loaded.");
+        var results = !{JSON.stringify(result)};// "#{JSON.stringify(result)}";
+        //console.log(results);
+        var prices=!{price};
+        //console.log("prices"+prices);
+        if (results) 
+        {
+
+            var yearFormat = d3.timeFormat('%Y');
+            //var d="2018-05-18";
+            //console.log(results[1].date == "2018-05-14");
+            //var startYear = yearFormat(data.startDate);
+            //var endYear = Number(yearFormat(new Date())) + 1;
+            //createHeatMap(data, startYear, endYear);
+            createHeatMap(results,prices,2017,2018);
+        }
+        //var results = !{result};
+        
+        });
+        // var results = !{JSON.stringify(result)};
+        //  console.log(results);
+        
+        
+    //});
+    
